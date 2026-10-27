@@ -16,13 +16,13 @@ Run from the repo root (`~/git/x32-mac/x32-mac`):
 - Build settings: `xcodebuild -project x32-mac.xcodeproj -scheme x32-mac -showBuildSettings`
 - There is no linter configured.
 
-The test targets are currently only Xcode template stubs, so there is no real test coverage. `OSCMessage` encode/decode and `X32Scene.oscCommands()` are pure and the easiest things to unit test.
+Run only the unit tests (skips the slow UI tests) with `-only-testing:x32-macTests`. Current coverage is `OSCMessage` encode/decode and `X32Scene.oscCommands()` parsing; there are no tests for `OSCClient`, `X32Connection`, or `X32Discovery` (they need a live socket or mixer). `x32-macUITests` is still the Xcode template stub.
 
 A `Stop` hook (`.claude/hooks/build-check.sh`) builds at the end of a turn if any `.swift` file has uncommitted changes, and feeds build errors back. Do not hand-edit `project.pbxproj`; new Swift files in the existing synchronized folders should be picked up by Xcode, and structural project changes are best made in Xcode itself.
 
 ## Logs
 
-The app does not use `Logger` yet. If adding logging, use subsystem `com.walters-short.x32-mac` so these work:
+The networking layer (`OSCClient`, `X32Connection`, `X32Discovery`) logs with `Logger`, subsystem `com.walters-short.x32-mac` and category equal to the class name. Sends and receives are logged at `debug` level (use `--level debug`). Use the same subsystem for new logging:
 
 - Live: `log stream --predicate 'subsystem == "com.walters-short.x32-mac"' --level debug` (run in background or with a timeout; it never terminates)
 - Past: `log show --last 5m --predicate 'subsystem == "com.walters-short.x32-mac"'`
