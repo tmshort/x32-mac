@@ -14,7 +14,9 @@ Run from the repo root (`~/git/x32-mac/x32-mac`):
 - All tests: `xcodebuild -project x32-mac.xcodeproj -scheme x32-mac -destination 'platform=macOS' test 2>&1 | xcbeautify`
 - Single test: add `-only-testing:x32-macTests/x32_macTests/example` (format `Target/Suite/function`). Unit tests use Swift Testing (`@Test`, `#expect`), not XCTest. `x32-macUITests` uses XCTest UI tests and launches the app, so avoid running it unless needed.
 - Build settings: `xcodebuild -project x32-mac.xcodeproj -scheme x32-mac -showBuildSettings`
-- There is no linter configured.
+- Lint/format: `xcrun swift-format lint -r x32-mac x32-macTests` (config in `.swift-format`; swift-format ships with Xcode). The existing code predates it and has ~150 findings (semicolons, spacing, blank lines), so don't reformat files you aren't otherwise changing. Format files you edit with `xcrun swift-format format -i <file>`.
+- `/test [Suite/function]` runs the unit tests via `.claude/commands/test.md`.
+- Xcode's MCP server is registered in `.mcp.json` (`xcrun mcpbridge`). It connects to a running Xcode (and may require enabling external agent/MCP access in Xcode's settings; unverified), and Claude Code asks you to approve project-scoped MCP servers the first time.
 
 Run only the unit tests (skips the slow UI tests) with `-only-testing:x32-macTests`. Current coverage is `OSCMessage` encode/decode and `X32Scene.oscCommands()` parsing; there are no tests for `OSCClient`, `X32Connection`, or `X32Discovery` (they need a live socket or mixer). `x32-macUITests` is still the Xcode template stub.
 
