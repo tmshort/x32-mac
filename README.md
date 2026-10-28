@@ -39,7 +39,7 @@ xcodebuild -project x32-mac.xcodeproj -scheme x32-mac -destination 'platform=mac
 
 `OSCMessage` (wire format) → `OSCClient` (UDP transport to port 10023) → `X32Connection` (app state) → SwiftUI views. See `CLAUDE.md` for more detail.
 
-Discovery only probes `255.255.255.255`, `192.168.0.255`, `192.168.1.255`, and `10.0.0.255`; mixers on other subnets must be connected to directly.
+Discovery enumerates the machine's network interfaces and broadcasts to every up IPv4 interface, using its address and netmask (plus `255.255.255.255`); mixers on other subnets must be connected to directly.
 
 ## License
 

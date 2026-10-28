@@ -35,9 +35,34 @@ final class X32Discovery {
 
     // MARK: - Private
 
+    /// Directed broadcast addresses for each up, non-loopback IPv4 interface, derived from its
+    /// address and netmask, plus the limited broadcast address as a fallback.
+    nonisolated static func localBroadcastAddresses() -> [String] {
+        var addresses = ["255.255.255.255"]
+        var ifaddrPtr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddrPtr) == 0, let first = ifaddrPtr else { return addresses }
+        defer { freeifaddrs(first) }
+
+        for ifa in sequence(first: first, next: { $0.pointee.ifa_next }) {
+            let flags = Int32(ifa.pointee.ifa_flags)
+            guard flags & IFF_UP != 0, flags & IFF_BROADCAST != 0, flags & IFF_LOOPBACK == 0,
+                let addrPtr = ifa.pointee.ifa_addr, let maskPtr = ifa.pointee.ifa_netmask,
+                addrPtr.pointee.sa_family == sa_family_t(AF_INET)
+            else { continue }
+
+            let ip = addrPtr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { UInt32(bigEndian: $0.pointee.sin_addr.s_addr) }
+            let mask = maskPtr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { UInt32(bigEndian: $0.pointee.sin_addr.s_addr) }
+
+            let broadcast = ip | ~mask
+            let text = "\(broadcast >> 24).\((broadcast >> 16) & 0xFF).\((broadcast >> 8) & 0xFF).\(broadcast & 0xFF)"
+            if !addresses.contains(text) { addresses.append(text) }
+        }
+        return addresses
+    }
+
     private func performScan() async {
-        // Broadcast /info and /xinfo to the subnet broadcast addresses
-        let broadcastAddresses = ["255.255.255.255", "192.168.0.255", "192.168.1.255", "10.0.0.255"]
+        // Broadcast /info and /xinfo to the broadcast address of every local IPv4 interface
+        let broadcastAddresses = Self.localBroadcastAddresses()
         let infoData = OSCMessage("/info").encode()
         let xinfoData = OSCMessage("/xinfo").encode()
 
