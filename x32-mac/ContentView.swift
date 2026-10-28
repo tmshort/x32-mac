@@ -5,19 +5,21 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case scenes     = "Scenes"
     case liveControl = "Live Control"
     case effects    = "Effects & EQ"
-    case routing    = "Channel Routing"
-    case terminal   = "OSC Terminal"
+    case routing       = "Input Routing"
+    case spectrograph  = "Spectrograph"
+    case terminal      = "OSC Terminal"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .connection:  return "network"
-        case .scenes:      return "doc.on.doc"
-        case .liveControl: return "slider.horizontal.3"
-        case .effects:     return "waveform"
-        case .routing:     return "arrow.triangle.branch"
-        case .terminal:    return "terminal"
+        case .connection:    return "network"
+        case .scenes:        return "doc.on.doc"
+        case .liveControl:   return "slider.horizontal.3"
+        case .effects:       return "waveform"
+        case .routing:       return "arrow.triangle.branch"
+        case .spectrograph:  return "chart.bar.xaxis"
+        case .terminal:      return "terminal"
         }
     }
 }
@@ -49,6 +51,8 @@ struct ContentView: View {
                 EffectsView()
             case .routing:
                 RoutingView()
+            case .spectrograph:
+                SpectrographView()
             case .terminal:
                 OSCTerminalView()
             }

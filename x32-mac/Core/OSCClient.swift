@@ -58,7 +58,7 @@ final class OSCClient {
 
     func send(_ message: OSCMessage) {
         guard let conn = connection else { return }
-        log.debug("send \(message.address, privacy: .public)")
+        log.debug("send \(message.address, privacy: .public) \(formatArgs(message), privacy: .public)")
         conn.send(content: message.encode(), completion: .idempotent)
     }
 
@@ -84,7 +84,7 @@ final class OSCClient {
             guard let self else { return }
             if let data {
                 if let msg = OSCMessage.decode(data) {
-                    log.debug("recv \(msg.address, privacy: .public)")
+                    log.debug("recv \(msg.address, privacy: .public) \(formatArgs(msg), privacy: .public)")
                     self.messageHandler?(msg)
                 } else {
                     log.error("failed to decode \(data.count) byte packet")
@@ -104,6 +104,20 @@ final class OSCClient {
             self?.send(OSCMessage("/xremote"))
         }
     }
+}
+
+// MARK: - Helpers
+
+private func formatArgs(_ msg: OSCMessage) -> String {
+    guard !msg.arguments.isEmpty else { return "" }
+    return msg.arguments.map { arg in
+        switch arg {
+        case .int(let v):    return "\(v)"
+        case .float(let v):  return String(format: "%.4f", v)
+        case .string(let s): return "\"\(s)\""
+        case .blob(let d):   return "<blob:\(d.count)b>"
+        }
+    }.joined(separator: " ")
 }
 
 // MARK: - Timeout helper

@@ -287,6 +287,7 @@ struct TapTempoView: View {
     @State private var tapTimes: [Date] = []
     @State private var bpm: Double? = nil
     @State private var lastDetectedEffect = ""
+    @State private var isStereoDelay = false
 
     var body: some View {
         Form {
@@ -342,18 +343,36 @@ struct TapTempoView: View {
 
     private func sendTempo() {
         guard let bpm, connection.isConnected else { return }
-        let ms = Int32(60000.0 / bpm)
-        // X32 delay FX time parameter
-        let addr = "/fx/\(fxSlot)/par/01"
-        connection.send(OSCMessage(addr, .int(ms)))
+        let ms = 60000.0 / bpm
+        // X32 delay time is a float 0.0-1.0 where 1.0 = 3000 ms (per X32TapW.c)
+        let normalized = Float(min(max(ms / 3000.0, 0.0), 1.0))
+        // Stereo Delay (type 10) uses par/02; all other delay types use par/01
+        let par = isStereoDelay ? "02" : "01"
+        connection.send(OSCMessage("/fx/\(fxSlot)/par/\(par)", .float(normalized)))
     }
 
     private func detectEffect() {
         guard connection.isConnected else { return }
         Task {
             if let reply = try? await connection.request(OSCMessage("/fx/\(fxSlot)/type")) {
-                let name = reply.stringValue ?? "unknown"
-                await MainActor.run { lastDetectedEffect = name }
+                // X32 returns effect type as an integer enum
+                let (name, stereo): (String, Bool)
+                switch reply.intValue {
+                case 10: (name, stereo) = ("Stereo Delay", true)
+                case 11: (name, stereo) = ("3-Tap Delay", false)
+                case 12: (name, stereo) = ("4-Tap Delay", false)
+                case 21: (name, stereo) = ("Delay+Reverb", false)
+                case 24: (name, stereo) = ("Delay+Chorus", false)
+                case 25: (name, stereo) = ("Delay+Flanger", false)
+                case 26: (name, stereo) = ("Mod Delay", false)
+                default:
+                    let label = reply.stringValue ?? reply.intValue.map { "type \($0)" } ?? "unknown"
+                    (name, stereo) = (label, false)
+                }
+                await MainActor.run {
+                    lastDetectedEffect = name
+                    isStereoDelay = stereo
+                }
             }
         }
     }
